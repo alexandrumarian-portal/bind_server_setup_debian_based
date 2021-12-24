@@ -1,0 +1,226 @@
+Installation
+
+The DNS server that we will use in this guide is BIND. BIND is the most deployed and one of the oldest DNS servers in use on the internet.
+
+Before we install BIND you should ensure that your server up-to-date with the latest packages:
+
+sudo apt update
+sudo apt upgrade
+
+BIND is available from the default Debian repositories and is installed with the following command:
+
+sudo apt install bind9 bind9utils bind9-doc dnsutils
+
+Global BIND Settings
+
+Making BIND function as a DNS server falls into two parts. The first is setting the global parameters which will make BIND function in the manner we desire. The second is to create the domain-specific DNS information that BIND will serve. This information is known as “zone information” or “zone records”.
+
+In this section, we will configure the global parameters.
+
+The first configuration file that we will edit is located at /etc/bind/named.conf.options and configures how bind will operate. Open this file with your favorite text editor, here nano is used:
+
+sudo nano /etc/bind/named.conf.options
+
+Edit named.conf.options so that it looks like the following:
+
+options {
+        directory "/var/cache/bind";
+        auth-nxdomain no;
+        listen-on port 53 { any; };
+        recursion no;
+};
+
+The options used here mean as follows:
+
+    directory – This sets a filesystem path variable. It does not need to be changed.
+    auth-nxdomain no – BIND will not answer authoritatively for domains that are not configured on this server.
+    listen-on port 53 { any; }; – This sets the port that BIND will listen on for incoming DNS requests. Port 53 is the default DNS port. The any options is used here instead of an IP address. This instructs BIND to attach to all available interfaces, private and public.
+    recursion no – This option configures BIND to only respond with information about domains that it has configuration files for. If this is set to yes then BIND will become a recursive DNS which means it will look up any request it receives a request for like Google’s recursive server at 8.8.8.8. This should always be set to no when BIND is also configured to respond to requests from any IP as we have set it up above for security reasons. This is because it can be used for DNS amplification attacks or other nefarious purposes.
+
+The second configuration file we will create sets which domains BIND is responsible for and where the files that contain their zone information are located. Open this file with a text editor:
+
+sudo nano /etc/bind/named.conf.local
+
+Edit this file so that it looks like:
+
+zone    "exmaple.com"   {
+        type master;
+        file    "/etc/bind/forward.example.com";
+ };
+
+zone   "10.100.51.198.in-addr.arpa"  {
+       type master;
+       file    "/etc/bind/reverse.example.com";
+ };
+
+The lines in this file mean as follows:
+
+    zone – This is the domain name or IP address that BIND will answer requests for.
+    type master – BIND will read the zone information from the local storage and provides authoritative information for the domain listed on the zone line.
+    file – The file that contains the zone information.
+
+As you can see there are two sections to this file that have the same syntax. The first section lists the domain (example.com) and is the so-called, forward DNS record. This means that it will convert domain information to IP addresses.
+
+The second is the reverse or PTR record of the server’s IP address. This converts in the opposite direction, i.e. IP addresses to domain names. The zone line for the reverse record looks a little strange because the IP address is in reverse. The IP address that this is the reverse record for is 198.51.100.10.
+
+Reverse records are important to have because many security systems such as spam filters will be less likely to accept mail sent from an IP address that has no reverse record.
+
+
+Zone File Configuration
+
+The first zone file that we will create is the forward information for the domain name. Open and create the file with a text editor:
+
+sudo nano /etc/bind/forward.example.com
+
+And use the following as your template:
+
+$TTL 1d
+@               IN      SOA     dns1.example.com.    hostmaster.example.com. (
+                1        ; serial
+                6h       ; refresh after 6 hours
+                1h       ; retry after 1 hour
+                1w       ; expire after 1 week
+                1d )     ; minimum TTL of 1 day
+;
+;
+;Name Server Information 
+@               IN      NS      ns1.example.com.
+ns1             IN      A       198.51.100.10
+;
+;
+;Mail Server Information
+example.com.    IN      MX      10      mail.example.com.
+mail            IN      A       198.51.100.20
+;
+;
+;Additional A Records:   
+www             IN      A       198.51.100.30
+site            IN      A       198.51.100.30
+;
+;
+;Additional CNAME Records:
+slave           IN      CNAME   www.example.com.
+
+The first configuration block beginning $TTL 1d has only a single line that you need to edit by changing the domain to your domain:
+
+example.com.    IN      SOA     dns1.example.com.    hostmaster.example.com. (
+
+This line means from left to right:
+
+    @ – This is replaced with the domain from the named.conf.local file i.e. example.com.
+    IN – The type of record, in this case, INternet records.
+    SOA – The record is the Start Of Authority record. This is the authoritative record for this domain.
+    dns1.example.com. – The nameserver where the DNS records are found.
+    hostmaster.example.com. – The email address of the administrator of the nameserver. The @ symbol is replaced with a dot.
+
+The rest of the lines here set values such as Time To Live’s which you can copy from the example.
+
+You should note the dots at end of the domains and hostnames e.g. example.com. This final dot stops the domain getting added automatically. We want this to happen with, for example, the www’s in the following line www IN A 198.51.100.10 as this will resolve www.example.com to the IP address.
+
+The next section – Name Server Information – is mandatory and should be edited to use the hostname of this nameserver and its IP address. It is customary to label the first nameserver ns1.domain.com but you can choose any hostname you want.
+
+The remaining sections are optional and are included as examples. The first of these, Mail Server Information, is an example of how an email will get sent to an email server at the IP 198.51.100.20. MX records should always resolve to hostnames so the required A record for mail.example.com is included in the mail records section for ease of understanding.
+
+The final two sections are further examples of A and CNAME records.
+
+Next, we need to create a reverse zone file. Open and create the file with a text editor:
+
+sudo nano /etc/bind/reverse.example.com
+
+Use the following example as your template:
+
+$TTL 1d
+@               IN      SOA     dns1.example.com.    hostmaster.example.com. (
+                1        ; serial
+                6h       ; refresh after 6 hours
+                1h       ; retry after 1 hour
+                1w       ; expire after 1 week
+                1d )     ; minimum TTL of 1 day
+;
+;
+;Name Server Information 
+@               IN      NS      ns1.example.com.
+ns1             IN      A       198.51.100.10
+;
+;
+;Reverse IP Information
+10.100.51.198.in-addr.arpa.      IN      PTR       ns1.example.com.
+20.100.51.198.in-addr.arpa.      IN      PTR       mail.example.com.
+30.100.51.198.in-addr.arpa.      IN      PTR       www.example.com.
+
+The first two sections are the same as the forward zone file. The last section is where the reverse maps are configured.
+
+The IP is set down in the backward format with the hostname you want it to resolve to at the end of the line. Here the reverse maps are set for all three IP addresses used in the forward zone file as examples.
+Check Your Configuration For Errors
+
+BIND provides a pair of tools to check that its configuration files do not contain any errors that would prevent BIND from starting.
+
+The first checks the global configuration files and is used as follows:
+
+sudo named-checkconf /etc/bind/named.conf.options
+sudo named-checkconf /etc/bind/named.conf.local
+
+The second tool will check the zone files and is used as follows:
+
+sudo named-checkzone <DOMAIN-NAME> <ZONE-FILE>
+e.g.
+sudo named-checkzone example.com /etc/bind/forward.example.com
+
+When you have finished editing these files and they do not throw any errors when you check BIND must be restarted and enabled so that it starts on boot:
+
+sudo systemctl enable bind9.service
+sudo systemctl restart bind9.service
+
+Configure Systemd To Keep BIND Running
+
+First, make a copy of the BIND systemd service file that we will edit:
+
+sudo cp /lib/systemd/system/bind9.service /etc/systemd/system/
+
+This will ensure that the edits will not be lost in future system updates. Next, open the file in an editor:
+
+sudo nano /etc/systemd/system/bind9.service
+
+And add the following two lines to the [Service] section:
+
+Restart=always
+RestartSec=3
+
+Then prompt Systemd to reload all its service files:
+
+sudo systemctl daemon-reload
+
+And restart BIND:
+
+sudo systemctl restart bind9.service
+
+Now, if BIND stop running for any reason, systemd will restart it again automatically.
+Testing The DNS Server
+
+Before you begin using your new DNS server you need to test that it works correctly i.e. BIND serves the correct DNS information for your domain.
+
+The DNS inspection tool dig was included with the packages we installed at the beginning of this guide. dig is one of the powerful and flexible DNS testing and investigation command line tools available on Linux and should be your goto tool for looking up DNS records.
+
+dig has the ability to ignore the system configured resolvers (set in /etc/resolv.conf) and request DNS information directly from a nameserver i.e. the DNS server you have just created.
+
+The syntax of a dig query is as follows:
+
+dig @<DNS SERVER> -t <RECORD TYPE> <HOST>
+
+If we replace this information with the details of the example server in this guide we get:
+
+dig @198.51.100.10 -t A www.example.com.
+
+This will return quite a bit of information. The result that we are interested in is always contained in the ANSWER SECTION e.g.:
+
+;; ANSWER SECTION:
+example.com.         86400   IN      A       198.51.100.30
+
+We can also check the reverse map record by using the -x flag:
+
+dig @198.51.100.10 -x 198.51.100.10
+
+Which will produce the result:
+
+;; ANSWER SECTION:
+10.100.51.198.in-addr.arpa.      IN      PTR       ns1.example.com.
