@@ -3,10 +3,10 @@ Installation
 The DNS server that we will use in this guide is BIND. BIND is the most deployed and one of the oldest DNS servers in use on the internet.
 
 Before we install BIND you should ensure that your server up-to-date with the latest packages:
-
+```
 sudo apt update
 sudo apt upgrade
-
+```
 BIND is available from the default Debian repositories and is installed with the following command:
 
 sudo apt install bind9 bind9utils bind9-doc dnsutils
