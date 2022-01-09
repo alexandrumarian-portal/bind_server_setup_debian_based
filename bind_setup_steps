@@ -3,15 +3,13 @@ Installation
 The DNS server that we will use in this guide is BIND. BIND is the most deployed and one of the oldest DNS servers in use on the internet.
 
 Before we install BIND you should ensure that your server up-to-date with the latest packages:
-```` 
-```
+
         sudo apt update
         sudo apt upgrade
-```
-````
+
 BIND is available from the default Debian repositories and is installed with the following command:
 
-sudo apt install bind9 bind9utils bind9-doc dnsutils
+        sudo apt install bind9 bind9utils bind9-doc dnsutils
 
 Global BIND Settings
 
@@ -21,7 +19,7 @@ In this section, we will configure the global parameters.
 
 The first configuration file that we will edit is located at /etc/bind/named.conf.options and configures how bind will operate. Open this file with your favorite text editor, here nano is used:
 
-sudo nano /etc/bind/named.conf.options
+        sudo nano /etc/bind/named.conf.options
 
 Edit named.conf.options so that it looks like the following:
 
@@ -41,7 +39,7 @@ The options used here mean as follows:
 
 The second configuration file we will create sets which domains BIND is responsible for and where the files that contain their zone information are located. Open this file with a text editor:
 
-sudo nano /etc/bind/named.conf.local
+        sudo nano /etc/bind/named.conf.local
 
 Edit this file so that it looks like:
 
@@ -72,7 +70,7 @@ Zone File Configuration
 
 The first zone file that we will create is the forward information for the domain name. Open and create the file with a text editor:
 
-sudo nano /etc/bind/forward.example.com
+        sudo nano /etc/bind/forward.example.com
 
 And use the following as your template:
 
@@ -127,7 +125,7 @@ The final two sections are further examples of A and CNAME records.
 
 Next, we need to create a reverse zone file. Open and create the file with a text editor:
 
-sudo nano /etc/bind/reverse.example.com
+        sudo nano /etc/bind/reverse.example.com
 
 Use the following example as your template:
 
@@ -159,29 +157,29 @@ BIND provides a pair of tools to check that its configuration files do not conta
 
 The first checks the global configuration files and is used as follows:
 
-sudo named-checkconf /etc/bind/named.conf.options
-sudo named-checkconf /etc/bind/named.conf.local
+        sudo named-checkconf /etc/bind/named.conf.options
+        sudo named-checkconf /etc/bind/named.conf.local
 
 The second tool will check the zone files and is used as follows:
 
-sudo named-checkzone <DOMAIN-NAME> <ZONE-FILE>
+        sudo named-checkzone <DOMAIN-NAME> <ZONE-FILE>
 e.g.
-sudo named-checkzone example.com /etc/bind/forward.example.com
+        sudo named-checkzone example.com /etc/bind/forward.example.com
 
 When you have finished editing these files and they do not throw any errors when you check BIND must be restarted and enabled so that it starts on boot:
 
-sudo systemctl enable bind9.service
-sudo systemctl restart bind9.service
+        sudo systemctl enable bind9.service
+        sudo systemctl restart bind9.service
 
 Configure Systemd To Keep BIND Running
 
 First, make a copy of the BIND systemd service file that we will edit:
 
-sudo cp /lib/systemd/system/bind9.service /etc/systemd/system/
+        sudo cp /lib/systemd/system/bind9.service /etc/systemd/system/
 
 This will ensure that the edits will not be lost in future system updates. Next, open the file in an editor:
 
-sudo nano /etc/systemd/system/bind9.service
+        sudo nano /etc/systemd/system/bind9.service
 
 And add the following two lines to the [Service] section:
 
@@ -190,11 +188,11 @@ RestartSec=3
 
 Then prompt Systemd to reload all its service files:
 
-sudo systemctl daemon-reload
+        sudo systemctl daemon-reload
 
 And restart BIND:
 
-sudo systemctl restart bind9.service
+        sudo systemctl restart bind9.service
 
 Now, if BIND stop running for any reason, systemd will restart it again automatically.
 Testing The DNS Server
@@ -207,11 +205,11 @@ dig has the ability to ignore the system configured resolvers (set in /etc/resol
 
 The syntax of a dig query is as follows:
 
-dig @<DNS SERVER> -t <RECORD TYPE> <HOST>
+        dig @<DNS SERVER> -t <RECORD TYPE> <HOST>
 
 If we replace this information with the details of the example server in this guide we get:
 
-dig @198.51.100.10 -t A www.example.com.
+        dig @198.51.100.10 -t A www.example.com.
 
 This will return quite a bit of information. The result that we are interested in is always contained in the ANSWER SECTION e.g.:
 
@@ -220,7 +218,7 @@ example.com.         86400   IN      A       198.51.100.30
 
 We can also check the reverse map record by using the -x flag:
 
-dig @198.51.100.10 -x 198.51.100.10
+        dig @198.51.100.10 -x 198.51.100.10
 
 Which will produce the result:
 
