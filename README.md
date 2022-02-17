@@ -9,6 +9,8 @@ https://blog.andreev.it/?p=4219
 10 most used DIG commands
 
 1. How to find the website’s IP address?
- ``` dig example.com
- ``` dig example.com +short
+ ``` 
+ dig example.com
+ dig example.com +short
+ ```
 2. How to find the name servers, responsible for your domain?
