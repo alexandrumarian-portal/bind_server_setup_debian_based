@@ -14,3 +14,10 @@ https://blog.andreev.it/?p=4219
  dig example.com +short
  ```
 2. How to find the name servers, responsible for your domain?
+```
+dig NS example.com +short
+```
+3. What is the delegation path to your DNS Zone?
+```
+dig example.com +trace
+```
