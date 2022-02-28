@@ -6,6 +6,7 @@ https://lowendbox.com/blog/how-to-create-a-dns-server-on-debian-stretch/
 https://blog.andreev.it/?p=4219
 https://www.cloudns.net/blog/10-most-used-dig-commands/
 https://www.cloudns.net/blog/basic-dns-terms-you-should-know/
+https://www.ubuntupit.com/everything-you-need-to-know-about-ubuntu-dns-servers/
 ```
 
 10 most used DIG commands
